@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Finance Tracker",
+    "slug": "finance-tracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "financetracker",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.financetracker.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.financetracker.app",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
+      "minSdkVersion": 21,
+      "targetSdkVersion": 34,
+      "compileSdkVersion": 34
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a0d565e4-5372-42d9-b8f1-f3a956e9559d"
+      }
+    }
+  }
+}
