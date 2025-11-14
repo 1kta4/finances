@@ -16,7 +16,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useData } from '../../context/DataContext';
 import { NeomorphicCard, NeomorphicButton, NeomorphicInput } from '../../components/neomorphic';
 import { formatCurrency, formatDateTime } from '../../utils/helpers';
-import { Transaction, Category } from '../../types';
+import { Transaction, Category, SubscriptionInterval } from '../../types';
 
 export const SpendingScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -43,6 +43,9 @@ export const SpendingScreen: React.FC = () => {
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isSubscription, setIsSubscription] = useState(false);
+  const [subscriptionInterval, setSubscriptionInterval] = useState<SubscriptionInterval>('month');
+  const [subscriptionCustomMonths, setSubscriptionCustomMonths] = useState('');
 
   const openAddModal = () => {
     setEditingTransaction(null);
@@ -54,6 +57,9 @@ export const SpendingScreen: React.FC = () => {
     const today = new Date();
     setSelectedDate(today);
     setTransactionDate(today.toISOString().split('T')[0]);
+    setIsSubscription(false);
+    setSubscriptionInterval('month');
+    setSubscriptionCustomMonths('');
     setModalVisible(true);
   };
 
@@ -67,6 +73,9 @@ export const SpendingScreen: React.FC = () => {
     const date = new Date(transaction.transaction_date);
     setSelectedDate(date);
     setTransactionDate(date.toISOString().split('T')[0]);
+    setIsSubscription(transaction.is_subscription || false);
+    setSubscriptionInterval(transaction.subscription_interval || 'month');
+    setSubscriptionCustomMonths(transaction.subscription_custom_months?.toString() || '');
     setModalVisible(true);
   };
 
@@ -80,6 +89,9 @@ export const SpendingScreen: React.FC = () => {
     const today = new Date();
     setSelectedDate(today);
     setTransactionDate(today.toISOString().split('T')[0]);
+    setIsSubscription(true); // Pre-select subscription for repeat
+    setSubscriptionInterval('month');
+    setSubscriptionCustomMonths('');
     setModalVisible(true);
   };
 
@@ -103,6 +115,12 @@ export const SpendingScreen: React.FC = () => {
       Alert.alert('Error', 'Please enter a valid amount');
       return;
     }
+    if (isSubscription && subscriptionInterval === 'custom') {
+      if (!subscriptionCustomMonths || parseInt(subscriptionCustomMonths) <= 0) {
+        Alert.alert('Error', 'Please enter a valid number of months');
+        return;
+      }
+    }
 
     try {
       const transactionData = {
@@ -113,6 +131,11 @@ export const SpendingScreen: React.FC = () => {
         description: description || undefined,
         payment_method: paymentMethod,
         transaction_date: new Date(transactionDate),
+        is_subscription: isSubscription,
+        subscription_interval: isSubscription ? subscriptionInterval : undefined,
+        subscription_custom_months: isSubscription && subscriptionInterval === 'custom'
+          ? parseInt(subscriptionCustomMonths)
+          : undefined,
       };
 
       if (editingTransaction) {
@@ -371,6 +394,106 @@ export const SpendingScreen: React.FC = () => {
                 />
               )}
 
+              {/* Subscription Toggle */}
+              <TouchableOpacity
+                style={[
+                  styles.subscriptionToggle,
+                  { backgroundColor: isSubscription ? colors.accent : colors.background, borderColor: colors.border },
+                ]}
+                onPress={() => setIsSubscription(!isSubscription)}
+              >
+                <Text style={[styles.subscriptionToggleText, { color: isSubscription ? '#FFFFFF' : colors.text }]}>
+                  {isSubscription ? '🔄 Recurring Transaction' : '🔄 Make Recurring'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Subscription Interval Selector */}
+              {isSubscription && (
+                <>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>Repeat Every</Text>
+                  <View style={styles.intervalButtons}>
+                    <TouchableOpacity
+                      style={[
+                        styles.intervalButton,
+                        subscriptionInterval === '2weeks' && { backgroundColor: colors.accent },
+                        { borderColor: colors.border },
+                      ]}
+                      onPress={() => setSubscriptionInterval('2weeks')}
+                    >
+                      <Text
+                        style={[
+                          styles.intervalButtonText,
+                          { color: subscriptionInterval === '2weeks' ? '#FFFFFF' : colors.text },
+                        ]}
+                      >
+                        2 Weeks
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.intervalButton,
+                        subscriptionInterval === 'month' && { backgroundColor: colors.accent },
+                        { borderColor: colors.border },
+                      ]}
+                      onPress={() => setSubscriptionInterval('month')}
+                    >
+                      <Text
+                        style={[
+                          styles.intervalButtonText,
+                          { color: subscriptionInterval === 'month' ? '#FFFFFF' : colors.text },
+                        ]}
+                      >
+                        Month
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.intervalButton,
+                        subscriptionInterval === 'year' && { backgroundColor: colors.accent },
+                        { borderColor: colors.border },
+                      ]}
+                      onPress={() => setSubscriptionInterval('year')}
+                    >
+                      <Text
+                        style={[
+                          styles.intervalButtonText,
+                          { color: subscriptionInterval === 'year' ? '#FFFFFF' : colors.text },
+                        ]}
+                      >
+                        Year
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.intervalButton,
+                        subscriptionInterval === 'custom' && { backgroundColor: colors.accent },
+                        { borderColor: colors.border },
+                      ]}
+                      onPress={() => setSubscriptionInterval('custom')}
+                    >
+                      <Text
+                        style={[
+                          styles.intervalButtonText,
+                          { color: subscriptionInterval === 'custom' ? '#FFFFFF' : colors.text },
+                        ]}
+                      >
+                        Custom
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {subscriptionInterval === 'custom' && (
+                    <NeomorphicInput
+                      label="Number of Months"
+                      value={subscriptionCustomMonths}
+                      onChangeText={setSubscriptionCustomMonths}
+                      placeholder="e.g., 3"
+                      keyboardType="number-pad"
+                    />
+                  )}
+                </>
+              )}
+
               <View style={styles.modalButtons}>
                 <NeomorphicButton
                   title="Cancel"
@@ -591,5 +714,32 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     marginTop: 16,
+  },
+  subscriptionToggle: {
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+  },
+  subscriptionToggleText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  intervalButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  intervalButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: 'center',
+  },
+  intervalButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

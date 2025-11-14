@@ -3,6 +3,7 @@ import * as Linking from 'expo-linking';
 import { AuthContextType, User } from '../types';
 import { supabase, signInWithEmail, signUpWithEmail, signOut as supabaseSignOut } from '../services/supabase';
 import { initDatabase } from '../services/storage';
+import { processSubscriptions } from '../services/subscriptionManager';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -27,6 +28,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         // Initialize database first
         await initDatabase();
+
+        // Process any due subscriptions
+        await processSubscriptions();
       } catch (error) {
         console.error('Error initializing database:', error);
       }

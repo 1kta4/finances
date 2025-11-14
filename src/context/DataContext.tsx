@@ -19,6 +19,7 @@ import {
   getAllGoals,
   getUserSettings,
   addTransaction as addTransactionToDB,
+  addSubscriptionTransaction,
   updateTransactionInDB,
   deleteTransactionFromDB,
   addCategory as addCategoryToDB,
@@ -34,6 +35,10 @@ import {
   bulkInsertCategories,
   bulkInsertTransactions,
   bulkInsertGoals,
+  getActiveSubscriptions,
+  getDueSubscriptions,
+  createSubscriptionOccurrence,
+  deleteSubscription,
 } from '../services/storage';
 import {
   fetchTransactions,
@@ -108,7 +113,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   // Transaction methods
   const addTransaction = async (transaction: TransactionFormData) => {
     try {
-      const newTransaction = await addTransactionToDB(transaction);
+      // Use subscription-specific function if this is a recurring transaction
+      const newTransaction = transaction.is_subscription
+        ? await addSubscriptionTransaction(transaction)
+        : await addTransactionToDB(transaction);
       setTransactions(prev => [newTransaction, ...prev]);
     } catch (error) {
       console.error('Error adding transaction:', error);

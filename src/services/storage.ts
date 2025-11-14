@@ -106,11 +106,53 @@ export const initDatabase = async (): Promise<void> => {
     );
   `);
 
+  // Add subscription columns if they don't exist (migration)
+  try {
+    await db.execAsync(`
+      ALTER TABLE transactions ADD COLUMN is_subscription INTEGER DEFAULT 0;
+    `);
+  } catch (e) {
+    // Column already exists, ignore error
+  }
+
+  try {
+    await db.execAsync(`
+      ALTER TABLE transactions ADD COLUMN subscription_interval TEXT;
+    `);
+  } catch (e) {
+    // Column already exists, ignore error
+  }
+
+  try {
+    await db.execAsync(`
+      ALTER TABLE transactions ADD COLUMN subscription_custom_months INTEGER;
+    `);
+  } catch (e) {
+    // Column already exists, ignore error
+  }
+
+  try {
+    await db.execAsync(`
+      ALTER TABLE transactions ADD COLUMN subscription_parent_id TEXT;
+    `);
+  } catch (e) {
+    // Column already exists, ignore error
+  }
+
+  try {
+    await db.execAsync(`
+      ALTER TABLE transactions ADD COLUMN next_occurrence TEXT;
+    `);
+  } catch (e) {
+    // Column already exists, ignore error
+  }
+
   // Create indexes for better query performance
   await db.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transaction_date DESC);
     CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);
     CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+    CREATE INDEX IF NOT EXISTS idx_transactions_subscription ON transactions(is_subscription);
   `);
 
   // Initialize default categories if database is empty
@@ -276,6 +318,8 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
     `SELECT t.id, t.category_id, t.amount, t.type,
             t.item_name, t.description, t.payment_method,
             t.transaction_date, t.created_at, t.updated_at,
+            t.is_subscription, t.subscription_interval, t.subscription_custom_months,
+            t.subscription_parent_id, t.next_occurrence,
             c.id as category_id_joined,
             c.name as category_name,
             c.type as category_type,
@@ -298,6 +342,11 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
     transaction_date: row.transaction_date,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    is_subscription: sqliteBoolean(row.is_subscription),
+    subscription_interval: row.subscription_interval,
+    subscription_custom_months: row.subscription_custom_months,
+    subscription_parent_id: row.subscription_parent_id,
+    next_occurrence: row.next_occurrence,
     category: row.category_id_joined ? {
       id: row.category_id_joined,
       user_id: '', // Local DB doesn't have user_id
@@ -315,6 +364,8 @@ export const getTransactionsByType = async (type: 'earning' | 'spending'): Promi
     `SELECT t.id, t.category_id, t.amount, t.type,
             t.item_name, t.description, t.payment_method,
             t.transaction_date, t.created_at, t.updated_at,
+            t.is_subscription, t.subscription_interval, t.subscription_custom_months,
+            t.subscription_parent_id, t.next_occurrence,
             c.id as category_id_joined,
             c.name as category_name,
             c.type as category_type,
@@ -339,6 +390,11 @@ export const getTransactionsByType = async (type: 'earning' | 'spending'): Promi
     transaction_date: row.transaction_date,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    is_subscription: sqliteBoolean(row.is_subscription),
+    subscription_interval: row.subscription_interval,
+    subscription_custom_months: row.subscription_custom_months,
+    subscription_parent_id: row.subscription_parent_id,
+    next_occurrence: row.next_occurrence,
     category: row.category_id_joined ? {
       id: row.category_id_joined,
       user_id: '', // Local DB doesn't have user_id
@@ -356,6 +412,8 @@ export const getTransactionsByDateRange = async (startDate: Date, endDate: Date)
     `SELECT t.id, t.category_id, t.amount, t.type,
             t.item_name, t.description, t.payment_method,
             t.transaction_date, t.created_at, t.updated_at,
+            t.is_subscription, t.subscription_interval, t.subscription_custom_months,
+            t.subscription_parent_id, t.next_occurrence,
             c.id as category_id_joined,
             c.name as category_name,
             c.type as category_type,
@@ -380,6 +438,11 @@ export const getTransactionsByDateRange = async (startDate: Date, endDate: Date)
     transaction_date: row.transaction_date,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    is_subscription: sqliteBoolean(row.is_subscription),
+    subscription_interval: row.subscription_interval,
+    subscription_custom_months: row.subscription_custom_months,
+    subscription_parent_id: row.subscription_parent_id,
+    next_occurrence: row.next_occurrence,
     category: row.category_id_joined ? {
       id: row.category_id_joined,
       user_id: '', // Local DB doesn't have user_id
@@ -880,4 +943,328 @@ export const getRecentItems = async (categoryId?: string, limit: number = 10): P
 
   const result = await db.getAllAsync<{ item_name: string; category_id: string; amount: number }>(query, params);
   return result;
+};
+
+// Subscription operations
+export const addSubscriptionTransaction = async (transaction: TransactionFormData): Promise<Transaction> => {
+  const db = openDatabase();
+  const id = generateUUID();
+  const timestamp = new Date().toISOString();
+
+  // Calculate next occurrence based on interval
+  let nextOccurrence: string | null = null;
+  if (transaction.is_subscription && transaction.subscription_interval) {
+    const nextDate = new Date(transaction.transaction_date);
+
+    switch (transaction.subscription_interval) {
+      case '2weeks':
+        nextDate.setDate(nextDate.getDate() + 14);
+        break;
+      case 'month':
+        nextDate.setMonth(nextDate.getMonth() + 1);
+        break;
+      case 'year':
+        nextDate.setFullYear(nextDate.getFullYear() + 1);
+        break;
+      case 'custom':
+        if (transaction.subscription_custom_months) {
+          nextDate.setMonth(nextDate.getMonth() + transaction.subscription_custom_months);
+        }
+        break;
+    }
+
+    nextOccurrence = nextDate.toISOString();
+  }
+
+  await db.runAsync(
+    `INSERT INTO transactions
+     (id, category_id, amount, type, item_name, description, payment_method, transaction_date,
+      is_subscription, subscription_interval, subscription_custom_months, next_occurrence,
+      created_at, updated_at, synced)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      transaction.category_id,
+      parseFloat(transaction.amount),
+      transaction.type,
+      transaction.item_name || null,
+      transaction.description || null,
+      transaction.payment_method,
+      transaction.transaction_date.toISOString(),
+      transaction.is_subscription ? 1 : 0,
+      transaction.subscription_interval || null,
+      transaction.subscription_custom_months || null,
+      nextOccurrence,
+      timestamp,
+      timestamp,
+      0,
+    ]
+  );
+
+  const result = await db.getFirstAsync<any>(
+    `SELECT t.id, t.category_id, t.amount, t.type,
+            t.item_name, t.description, t.payment_method,
+            t.transaction_date, t.created_at, t.updated_at,
+            t.is_subscription, t.subscription_interval, t.subscription_custom_months,
+            t.subscription_parent_id, t.next_occurrence,
+            c.id as category_id_joined,
+            c.name as category_name,
+            c.type as category_type,
+            c.is_custom as category_is_custom,
+            c.created_at as category_created_at
+     FROM transactions t
+     LEFT JOIN categories c ON t.category_id = c.id
+     WHERE t.id = ?`,
+    [id]
+  );
+
+  return {
+    id: result.id,
+    user_id: '',
+    category_id: result.category_id,
+    amount: result.amount,
+    type: result.type,
+    item_name: result.item_name,
+    description: result.description,
+    payment_method: result.payment_method,
+    transaction_date: result.transaction_date,
+    created_at: result.created_at,
+    updated_at: result.updated_at,
+    is_subscription: sqliteBoolean(result.is_subscription),
+    subscription_interval: result.subscription_interval,
+    subscription_custom_months: result.subscription_custom_months,
+    subscription_parent_id: result.subscription_parent_id,
+    next_occurrence: result.next_occurrence,
+    category: result.category_id_joined ? {
+      id: result.category_id_joined,
+      user_id: '',
+      name: result.category_name,
+      type: result.category_type,
+      is_custom: sqliteBoolean(result.category_is_custom),
+      created_at: result.category_created_at,
+    } : undefined,
+  } as Transaction;
+};
+
+export const getActiveSubscriptions = async (): Promise<Transaction[]> => {
+  const db = openDatabase();
+  const result = await db.getAllAsync<any>(
+    `SELECT t.id, t.category_id, t.amount, t.type,
+            t.item_name, t.description, t.payment_method,
+            t.transaction_date, t.created_at, t.updated_at,
+            t.is_subscription, t.subscription_interval, t.subscription_custom_months,
+            t.subscription_parent_id, t.next_occurrence,
+            c.id as category_id_joined,
+            c.name as category_name,
+            c.type as category_type,
+            c.is_custom as category_is_custom,
+            c.created_at as category_created_at
+     FROM transactions t
+     LEFT JOIN categories c ON t.category_id = c.id
+     WHERE t.is_subscription = 1 AND t.subscription_parent_id IS NULL
+     ORDER BY t.next_occurrence ASC`
+  );
+
+  return result.map((row: any) => ({
+    id: row.id,
+    user_id: '',
+    category_id: row.category_id,
+    amount: row.amount,
+    type: row.type,
+    item_name: row.item_name,
+    description: row.description,
+    payment_method: row.payment_method,
+    transaction_date: row.transaction_date,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    is_subscription: sqliteBoolean(row.is_subscription),
+    subscription_interval: row.subscription_interval,
+    subscription_custom_months: row.subscription_custom_months,
+    subscription_parent_id: row.subscription_parent_id,
+    next_occurrence: row.next_occurrence,
+    category: row.category_id_joined ? {
+      id: row.category_id_joined,
+      user_id: '',
+      name: row.category_name,
+      type: row.category_type,
+      is_custom: sqliteBoolean(row.category_is_custom),
+      created_at: row.category_created_at,
+    } : undefined,
+  })) as Transaction[];
+};
+
+export const getDueSubscriptions = async (): Promise<Transaction[]> => {
+  const db = openDatabase();
+  const now = new Date().toISOString();
+
+  const result = await db.getAllAsync<any>(
+    `SELECT t.id, t.category_id, t.amount, t.type,
+            t.item_name, t.description, t.payment_method,
+            t.transaction_date, t.created_at, t.updated_at,
+            t.is_subscription, t.subscription_interval, t.subscription_custom_months,
+            t.subscription_parent_id, t.next_occurrence,
+            c.id as category_id_joined,
+            c.name as category_name,
+            c.type as category_type,
+            c.is_custom as category_is_custom,
+            c.created_at as category_created_at
+     FROM transactions t
+     LEFT JOIN categories c ON t.category_id = c.id
+     WHERE t.is_subscription = 1
+       AND t.subscription_parent_id IS NULL
+       AND t.next_occurrence IS NOT NULL
+       AND t.next_occurrence <= ?
+     ORDER BY t.next_occurrence ASC`,
+    [now]
+  );
+
+  return result.map((row: any) => ({
+    id: row.id,
+    user_id: '',
+    category_id: row.category_id,
+    amount: row.amount,
+    type: row.type,
+    item_name: row.item_name,
+    description: row.description,
+    payment_method: row.payment_method,
+    transaction_date: row.transaction_date,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    is_subscription: sqliteBoolean(row.is_subscription),
+    subscription_interval: row.subscription_interval,
+    subscription_custom_months: row.subscription_custom_months,
+    subscription_parent_id: row.subscription_parent_id,
+    next_occurrence: row.next_occurrence,
+    category: row.category_id_joined ? {
+      id: row.category_id_joined,
+      user_id: '',
+      name: row.category_name,
+      type: row.category_type,
+      is_custom: sqliteBoolean(row.category_is_custom),
+      created_at: row.category_created_at,
+    } : undefined,
+  })) as Transaction[];
+};
+
+export const createSubscriptionOccurrence = async (subscriptionId: string): Promise<Transaction> => {
+  const db = openDatabase();
+
+  // Get the parent subscription
+  const parent = await db.getFirstAsync<any>(
+    `SELECT * FROM transactions WHERE id = ?`,
+    [subscriptionId]
+  );
+
+  if (!parent || !sqliteBoolean(parent.is_subscription)) {
+    throw new Error('Invalid subscription');
+  }
+
+  const newId = generateUUID();
+  const timestamp = new Date().toISOString();
+  const occurrenceDate = parent.next_occurrence || timestamp;
+
+  // Create the new occurrence
+  await db.runAsync(
+    `INSERT INTO transactions
+     (id, category_id, amount, type, item_name, description, payment_method, transaction_date,
+      is_subscription, subscription_parent_id, created_at, updated_at, synced)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      newId,
+      parent.category_id,
+      parent.amount,
+      parent.type,
+      parent.item_name,
+      parent.description,
+      parent.payment_method,
+      occurrenceDate,
+      0, // Child transactions are not subscriptions themselves
+      subscriptionId,
+      timestamp,
+      timestamp,
+      0,
+    ]
+  );
+
+  // Calculate and update next occurrence for parent
+  const nextDate = new Date(occurrenceDate);
+
+  switch (parent.subscription_interval) {
+    case '2weeks':
+      nextDate.setDate(nextDate.getDate() + 14);
+      break;
+    case 'month':
+      nextDate.setMonth(nextDate.getMonth() + 1);
+      break;
+    case 'year':
+      nextDate.setFullYear(nextDate.getFullYear() + 1);
+      break;
+    case 'custom':
+      if (parent.subscription_custom_months) {
+        nextDate.setMonth(nextDate.getMonth() + parent.subscription_custom_months);
+      }
+      break;
+  }
+
+  await db.runAsync(
+    `UPDATE transactions SET next_occurrence = ?, updated_at = ? WHERE id = ?`,
+    [nextDate.toISOString(), timestamp, subscriptionId]
+  );
+
+  // Fetch and return the newly created transaction
+  const result = await db.getFirstAsync<any>(
+    `SELECT t.id, t.category_id, t.amount, t.type,
+            t.item_name, t.description, t.payment_method,
+            t.transaction_date, t.created_at, t.updated_at,
+            t.is_subscription, t.subscription_parent_id,
+            c.id as category_id_joined,
+            c.name as category_name,
+            c.type as category_type,
+            c.is_custom as category_is_custom,
+            c.created_at as category_created_at
+     FROM transactions t
+     LEFT JOIN categories c ON t.category_id = c.id
+     WHERE t.id = ?`,
+    [newId]
+  );
+
+  return {
+    id: result.id,
+    user_id: '',
+    category_id: result.category_id,
+    amount: result.amount,
+    type: result.type,
+    item_name: result.item_name,
+    description: result.description,
+    payment_method: result.payment_method,
+    transaction_date: result.transaction_date,
+    created_at: result.created_at,
+    updated_at: result.updated_at,
+    is_subscription: sqliteBoolean(result.is_subscription),
+    subscription_parent_id: result.subscription_parent_id,
+    category: result.category_id_joined ? {
+      id: result.category_id_joined,
+      user_id: '',
+      name: result.category_name,
+      type: result.category_type,
+      is_custom: sqliteBoolean(result.category_is_custom),
+      created_at: result.category_created_at,
+    } : undefined,
+  } as Transaction;
+};
+
+export const deleteSubscription = async (subscriptionId: string): Promise<void> => {
+  const db = openDatabase();
+
+  // Delete all child transactions first
+  await db.runAsync(
+    'DELETE FROM transactions WHERE subscription_parent_id = ?',
+    [subscriptionId]
+  );
+
+  // Then delete the parent subscription
+  await db.runAsync(
+    'DELETE FROM transactions WHERE id = ?',
+    [subscriptionId]
+  );
 };

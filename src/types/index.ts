@@ -15,6 +15,8 @@ export interface Category {
   created_at: string;
 }
 
+export type SubscriptionInterval = '2weeks' | 'month' | 'year' | 'custom';
+
 export interface Transaction {
   id: string;
   user_id: string;
@@ -27,6 +29,11 @@ export interface Transaction {
   transaction_date: string;
   created_at: string;
   updated_at: string;
+  is_subscription: boolean;
+  subscription_interval?: SubscriptionInterval;
+  subscription_custom_months?: number;
+  subscription_parent_id?: string; // Links to the original subscription transaction
+  next_occurrence?: string; // Date when next transaction should be created
   category?: Category; // Joined data
 }
 
@@ -106,6 +113,9 @@ export interface TransactionFormData {
   description?: string;
   payment_method: PaymentMethod;
   transaction_date: Date;
+  is_subscription?: boolean;
+  subscription_interval?: SubscriptionInterval;
+  subscription_custom_months?: number;
 }
 
 export interface GoalFormData {
