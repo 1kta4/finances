@@ -393,7 +393,8 @@ export const SpendingScreen: React.FC = () => {
                     handleDelete(editingTransaction);
                   }}
                   variant="outline"
-                  style={[styles.deleteButton, { borderColor: '#E74C3C' }]}
+                  style={{ ...styles.deleteButton, borderColor: '#E74C3C' }}
+                  textStyle={{ color: '#E74C3C' }}
                 />
               )}
             </ScrollView>

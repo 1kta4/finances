@@ -793,6 +793,72 @@ export const clearAllData = async (): Promise<void> => {
 };
 
 // Get recent items (for quick re-add feature)
+// Bulk insert functions for restore operations
+export const bulkInsertCategories = async (categories: Category[]): Promise<void> => {
+  const db = openDatabase();
+
+  for (const category of categories) {
+    await db.runAsync(
+      `INSERT OR REPLACE INTO categories (id, name, type, is_custom, created_at, synced)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        category.id,
+        category.name,
+        category.type,
+        category.is_custom ? 1 : 0,
+        category.created_at,
+        1, // Mark as synced since it's from Supabase
+      ]
+    );
+  }
+};
+
+export const bulkInsertTransactions = async (transactions: Transaction[]): Promise<void> => {
+  const db = openDatabase();
+
+  for (const transaction of transactions) {
+    await db.runAsync(
+      `INSERT OR REPLACE INTO transactions
+       (id, category_id, amount, type, item_name, description, payment_method, transaction_date, created_at, updated_at, synced)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        transaction.id,
+        transaction.category_id,
+        transaction.amount,
+        transaction.type,
+        transaction.item_name || null,
+        transaction.description || null,
+        transaction.payment_method,
+        transaction.transaction_date,
+        transaction.created_at,
+        transaction.updated_at,
+        1, // Mark as synced since it's from Supabase
+      ]
+    );
+  }
+};
+
+export const bulkInsertGoals = async (goals: Goal[]): Promise<void> => {
+  const db = openDatabase();
+
+  for (const goal of goals) {
+    await db.runAsync(
+      `INSERT OR REPLACE INTO goals (id, title, target_amount, current_amount, deadline, created_at, updated_at, synced)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        goal.id,
+        goal.title,
+        goal.target_amount,
+        goal.current_amount,
+        goal.deadline || null,
+        goal.created_at,
+        goal.updated_at,
+        1, // Mark as synced since it's from Supabase
+      ]
+    );
+  }
+};
+
 export const getRecentItems = async (categoryId?: string, limit: number = 10): Promise<{ item_name: string; category_id: string; amount: number }[]> => {
   const db = openDatabase();
 

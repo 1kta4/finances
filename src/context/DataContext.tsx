@@ -31,6 +31,9 @@ import {
   getRecentItems as getRecentItemsFromDB,
   clearAllData,
   getTransactionsByDateRange as getTransactionsByDateRangeFromDB,
+  bulkInsertCategories,
+  bulkInsertTransactions,
+  bulkInsertGoals,
 } from '../services/storage';
 import {
   fetchTransactions,
@@ -268,13 +271,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       // Clear local data
       await clearAllData();
 
-      // Save fetched data to local storage
-      // Note: This is a simplified approach. In production, you'd want to handle
-      // conflicts and merging more carefully
-
-      setTransactions(transactionsData);
-      setCategories(categoriesData);
-      setGoals(goalsData);
+      // Save fetched data to local SQLite database
+      await bulkInsertCategories(categoriesData);
+      await bulkInsertTransactions(transactionsData);
+      await bulkInsertGoals(goalsData);
 
       // Reload data from local storage to ensure consistency
       await loadData();

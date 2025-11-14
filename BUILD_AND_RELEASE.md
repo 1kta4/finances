@@ -123,11 +123,23 @@ npm run build:android
 
 ## Troubleshooting
 
+### App Crashes with "supabaseUrl is required"
+
+**This was the crash you encountered!**
+
+**Cause:** Environment variables from `.env` are not included in APK builds.
+
+**Fix:** Environment variables are now configured in `eas.json` in the `env` section. The fix has been applied, so rebuilding will resolve this issue.
+
+If you see this error again:
+1. Check that `eas.json` has the `env` section with your Supabase credentials
+2. Rebuild the APK: `npm run build:android`
+
 ### Build Failed
 
 - Check the build logs on expo.dev
 - Make sure all dependencies are installed: `npm install`
-- Ensure `.env` file is configured with Supabase credentials
+- Ensure `eas.json` contains your Supabase configuration
 
 ### APK Won't Install
 
@@ -137,9 +149,15 @@ npm run build:android
 
 ### Environment Variables
 
-The APK will be built with the environment variables from your `.env` file. Make sure:
-- EXPO_PUBLIC_SUPABASE_URL is set
-- EXPO_PUBLIC_SUPABASE_ANON_KEY is set
+**IMPORTANT:** Environment variables are configured in `eas.json` for builds, NOT from your `.env` file.
+
+The `eas.json` file contains your Supabase configuration:
+- EXPO_PUBLIC_SUPABASE_URL
+- EXPO_PUBLIC_SUPABASE_ANON_KEY
+
+**Note:** The Supabase ANON key is designed to be public (it's used in client apps), so it's safe to commit `eas.json` to your repository. This key only allows access based on your Row Level Security (RLS) policies in Supabase.
+
+If you change your Supabase project, update these values in `eas.json`
 
 ## Build Profiles
 

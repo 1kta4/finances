@@ -132,9 +132,13 @@ export const fetchCategories = async (): Promise<Category[]> => {
 };
 
 export const createCategory = async (category: CategoryFormData): Promise<Category> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('No user logged in');
+
   const { data, error } = await supabase
     .from('categories')
     .insert([{
+      user_id: currentUser.id,
       name: category.name,
       type: category.type,
       is_custom: true,
@@ -182,9 +186,13 @@ export const fetchTransactions = async (): Promise<Transaction[]> => {
 };
 
 export const createTransaction = async (transaction: TransactionFormData): Promise<Transaction> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('No user logged in');
+
   const { data, error } = await supabase
     .from('transactions')
     .insert([{
+      user_id: currentUser.id,
       category_id: transaction.category_id,
       amount: parseFloat(transaction.amount),
       type: transaction.type,
@@ -252,9 +260,13 @@ export const fetchGoals = async (): Promise<Goal[]> => {
 };
 
 export const createGoal = async (goal: GoalFormData): Promise<Goal> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('No user logged in');
+
   const { data, error } = await supabase
     .from('goals')
     .insert([{
+      user_id: currentUser.id,
       title: goal.title,
       target_amount: parseFloat(goal.target_amount),
       current_amount: parseFloat(goal.current_amount),

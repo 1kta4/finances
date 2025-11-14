@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# EAS Build
+# Note: eas.json contains public Supabase ANON key which is safe to commit
