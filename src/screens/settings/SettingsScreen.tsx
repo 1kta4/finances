@@ -5,20 +5,18 @@ import {
   StyleSheet,
   ScrollView,
   SafeAreaView,
-  TouchableOpacity,
   Alert,
-  Switch,
   Modal,
-  TextInput,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { NeomorphicCard, NeomorphicButton, NeomorphicInput } from '../../components/neomorphic';
+import { NeomorphicCard, NeomorphicButton, NeomorphicInput, NeomorphicSwitch, NeomorphicChip } from '../../components/neomorphic';
 import { ThemeColor, Category, Goal } from '../../types';
-import { THEME_COLORS, AVAILABLE_CURRENCIES } from '../../utils/constants';
+import { AVAILABLE_CURRENCIES, THEME_COLORS } from '../../utils/constants';
 
 export const SettingsScreen: React.FC = () => {
   const { colors, themeMode, themeColor, toggleTheme, setThemeColor } = useTheme();
@@ -325,11 +323,9 @@ export const SettingsScreen: React.FC = () => {
             <Text style={[styles.settingLabel, { color: colors.text }]}>
               Dark Mode
             </Text>
-            <Switch
+            <NeomorphicSwitch
               value={themeMode === 'dark'}
               onValueChange={toggleTheme}
-              trackColor={{ false: colors.border, true: colors.accent }}
-              thumbColor={'#FFFFFF'}
             />
           </View>
 
@@ -358,34 +354,13 @@ export const SettingsScreen: React.FC = () => {
           </Text>
           <View style={styles.currencyContainer}>
             {AVAILABLE_CURRENCIES.map((currency) => (
-              <TouchableOpacity
+              <NeomorphicChip
                 key={currency.code}
-                style={[
-                  styles.currencyButton,
-                  {
-                    backgroundColor: settings?.currency === currency.code ? colors.accent : colors.background,
-                    borderColor: colors.border,
-                  },
-                ]}
+                label={currency.symbol}
+                selected={settings?.currency === currency.code}
                 onPress={() => handleCurrencyChange(currency.code)}
-              >
-                <Text
-                  style={[
-                    styles.currencySymbol,
-                    { color: settings?.currency === currency.code ? '#FFFFFF' : colors.text },
-                  ]}
-                >
-                  {currency.symbol}
-                </Text>
-                <Text
-                  style={[
-                    styles.currencyCode,
-                    { color: settings?.currency === currency.code ? '#FFFFFF' : colors.textSecondary },
-                  ]}
-                >
-                  {currency.code}
-                </Text>
-              </TouchableOpacity>
+                style={styles.currencyChip}
+              />
             ))}
           </View>
         </NeomorphicCard>
@@ -460,22 +435,18 @@ export const SettingsScreen: React.FC = () => {
                   <View style={styles.listItemActions}>
                     {category.is_custom && (
                       <>
-                        <TouchableOpacity
+                        <NeomorphicButton
+                          title="Edit"
                           onPress={() => openEditCategoryModal(category)}
+                          variant="secondary"
                           style={styles.actionButton}
-                        >
-                          <Text style={[styles.actionButtonText, { color: colors.accent }]}>
-                            Edit
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        />
+                        <NeomorphicButton
+                          title="Delete"
                           onPress={() => handleDeleteCategory(category)}
+                          variant="outline"
                           style={styles.actionButton}
-                        >
-                          <Text style={[styles.actionButtonText, { color: '#E74C3C' }]}>
-                            Delete
-                          </Text>
-                        </TouchableOpacity>
+                        />
                       </>
                     )}
                   </View>
@@ -518,22 +489,18 @@ export const SettingsScreen: React.FC = () => {
                     </Text>
                   </View>
                   <View style={styles.listItemActions}>
-                    <TouchableOpacity
+                    <NeomorphicButton
+                      title="Edit"
                       onPress={() => openEditGoalModal(goal)}
+                      variant="secondary"
                       style={styles.actionButton}
-                    >
-                      <Text style={[styles.actionButtonText, { color: colors.accent }]}>
-                        Edit
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    />
+                    <NeomorphicButton
+                      title="Delete"
                       onPress={() => handleDeleteGoal(goal)}
+                      variant="outline"
                       style={styles.actionButton}
-                    >
-                      <Text style={[styles.actionButtonText, { color: '#E74C3C' }]}>
-                        Delete
-                      </Text>
-                    </TouchableOpacity>
+                    />
                   </View>
                 </View>
               ))}
@@ -566,40 +533,18 @@ export const SettingsScreen: React.FC = () => {
               <View style={styles.typeSelector}>
                 <Text style={[styles.label, { color: colors.textSecondary }]}>Type</Text>
                 <View style={styles.typeButtons}>
-                  <TouchableOpacity
-                    style={[
-                      styles.typeButton,
-                      categoryType === 'spending' && { backgroundColor: colors.accent },
-                      { borderColor: colors.border },
-                    ]}
+                  <NeomorphicChip
+                    label="Spending"
+                    selected={categoryType === 'spending'}
                     onPress={() => setCategoryType('spending')}
-                  >
-                    <Text
-                      style={[
-                        styles.typeButtonText,
-                        { color: categoryType === 'spending' ? '#FFFFFF' : colors.text },
-                      ]}
-                    >
-                      Spending
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.typeButton,
-                      categoryType === 'earning' && { backgroundColor: colors.accent },
-                      { borderColor: colors.border },
-                    ]}
+                    style={styles.typeChip}
+                  />
+                  <NeomorphicChip
+                    label="Earning"
+                    selected={categoryType === 'earning'}
                     onPress={() => setCategoryType('earning')}
-                  >
-                    <Text
-                      style={[
-                        styles.typeButtonText,
-                        { color: categoryType === 'earning' ? '#FFFFFF' : colors.text },
-                      ]}
-                    >
-                      Earning
-                    </Text>
-                  </TouchableOpacity>
+                    style={styles.typeChip}
+                  />
                 </View>
               </View>
             )}
@@ -660,12 +605,12 @@ export const SettingsScreen: React.FC = () => {
             {/* Deadline Selection */}
             <Text style={[styles.label, { color: colors.textSecondary, marginTop: 16 }]}>Deadline (Optional)</Text>
             <View style={styles.dateContainer}>
-              <TouchableOpacity
-                style={[styles.calendarButton, { backgroundColor: colors.accent }]}
+              <NeomorphicButton
+                title="📅 Pick Date"
                 onPress={() => setShowGoalDatePicker(true)}
-              >
-                <Text style={styles.calendarButtonText}>📅 Pick Date</Text>
-              </TouchableOpacity>
+                variant="secondary"
+                style={styles.calendarButton}
+              />
               <View style={styles.dateInputContainer}>
                 <NeomorphicInput
                   value={goalDeadline}
@@ -774,6 +719,7 @@ const styles = StyleSheet.create({
   themeColorContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 12,
   },
   themeColorButton: {
     width: 60,
@@ -783,25 +729,10 @@ const styles = StyleSheet.create({
   currencyContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 8,
   },
-  currencyButton: {
+  currencyChip: {
     flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  currencySymbol: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  currencyCode: {
-    fontSize: 12,
-    fontWeight: '500',
   },
   backupInfo: {
     fontSize: 12,
@@ -852,12 +783,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   modalOverlay: {
     flex: 1,
@@ -887,17 +814,8 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 8,
   },
-  typeButton: {
+  typeChip: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-  },
-  typeButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
   },
   modalButtons: {
     flexDirection: 'row',
@@ -911,19 +829,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginBottom: 16,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   calendarButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  calendarButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+    minWidth: 120,
   },
   dateInputContainer: {
     flex: 1,

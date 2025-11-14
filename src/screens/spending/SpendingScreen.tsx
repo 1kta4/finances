@@ -14,7 +14,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../../context/ThemeContext';
 import { useData } from '../../context/DataContext';
-import { NeomorphicCard, NeomorphicButton, NeomorphicInput } from '../../components/neomorphic';
+import { NeomorphicCard, NeomorphicButton, NeomorphicInput, NeomorphicFAB, NeomorphicChip } from '../../components/neomorphic';
 import { formatCurrency, formatDateTime } from '../../utils/helpers';
 import { Transaction, Category, SubscriptionInterval } from '../../types';
 
@@ -202,12 +202,12 @@ export const SpendingScreen: React.FC = () => {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.repeatButton, { backgroundColor: colors.accent }]}
+        <NeomorphicChip
+          label="🔁 Repeat"
+          selected={true}
           onPress={() => openRepeatModal(item)}
-        >
-          <Text style={styles.repeatButtonText}>🔁 Repeat</Text>
-        </TouchableOpacity>
+          style={styles.repeatButton}
+        />
       </NeomorphicCard>
     );
   };
@@ -240,12 +240,7 @@ export const SpendingScreen: React.FC = () => {
       )}
 
       {/* FAB */}
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.accent }]}
-        onPress={openAddModal}
-      >
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
+      <NeomorphicFAB icon="+" onPress={openAddModal} />
 
       {/* Transaction Modal */}
       <Modal
@@ -265,27 +260,13 @@ export const SpendingScreen: React.FC = () => {
               <Text style={[styles.label, { color: colors.textSecondary }]}>Category</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
                 {spendingCategories.map((cat) => (
-                  <TouchableOpacity
+                  <NeomorphicChip
                     key={cat.id}
-                    style={[
-                      styles.categoryChip,
-                      {
-                        backgroundColor:
-                          selectedCategory === cat.id ? colors.accent : colors.background,
-                        borderColor: colors.border,
-                      },
-                    ]}
+                    label={cat.name}
+                    selected={selectedCategory === cat.id}
                     onPress={() => setSelectedCategory(cat.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.categoryChipText,
-                        { color: selectedCategory === cat.id ? '#FFFFFF' : colors.text },
-                      ]}
-                    >
-                      {cat.name}
-                    </Text>
-                  </TouchableOpacity>
+                    style={styles.categoryChip}
+                  />
                 ))}
               </ScrollView>
 
@@ -315,51 +296,29 @@ export const SpendingScreen: React.FC = () => {
               {/* Payment Method */}
               <Text style={[styles.label, { color: colors.textSecondary }]}>Payment Method</Text>
               <View style={styles.paymentMethodButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.paymentMethodButton,
-                    paymentMethod === 'cash' && { backgroundColor: colors.accent },
-                    { borderColor: colors.border },
-                  ]}
+                <NeomorphicChip
+                  label="💵 Cash"
+                  selected={paymentMethod === 'cash'}
                   onPress={() => setPaymentMethod('cash')}
-                >
-                  <Text
-                    style={[
-                      styles.paymentMethodText,
-                      { color: paymentMethod === 'cash' ? '#FFFFFF' : colors.text },
-                    ]}
-                  >
-                    💵 Cash
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.paymentMethodButton,
-                    paymentMethod === 'card' && { backgroundColor: colors.accent },
-                    { borderColor: colors.border },
-                  ]}
+                  style={styles.paymentMethodButton}
+                />
+                <NeomorphicChip
+                  label="💳 Card"
+                  selected={paymentMethod === 'card'}
                   onPress={() => setPaymentMethod('card')}
-                >
-                  <Text
-                    style={[
-                      styles.paymentMethodText,
-                      { color: paymentMethod === 'card' ? '#FFFFFF' : colors.text },
-                    ]}
-                  >
-                    💳 Card
-                  </Text>
-                </TouchableOpacity>
+                  style={styles.paymentMethodButton}
+                />
               </View>
 
               {/* Date Selection */}
               <Text style={[styles.label, { color: colors.textSecondary }]}>Date</Text>
               <View style={styles.dateContainer}>
-                <TouchableOpacity
-                  style={[styles.calendarButton, { backgroundColor: colors.accent }]}
+                <NeomorphicChip
+                  label="📅 Pick Date"
+                  selected={true}
                   onPress={() => setShowDatePicker(true)}
-                >
-                  <Text style={styles.calendarButtonText}>📅 Pick Date</Text>
-                </TouchableOpacity>
+                  style={styles.calendarButton}
+                />
                 <View style={styles.dateInputContainer}>
                   <NeomorphicInput
                     value={transactionDate}
@@ -395,91 +354,42 @@ export const SpendingScreen: React.FC = () => {
               )}
 
               {/* Subscription Toggle */}
-              <TouchableOpacity
-                style={[
-                  styles.subscriptionToggle,
-                  { backgroundColor: isSubscription ? colors.accent : colors.background, borderColor: colors.border },
-                ]}
+              <NeomorphicChip
+                label={isSubscription ? '🔄 Recurring Transaction' : '🔄 Make Recurring'}
+                selected={isSubscription}
                 onPress={() => setIsSubscription(!isSubscription)}
-              >
-                <Text style={[styles.subscriptionToggleText, { color: isSubscription ? '#FFFFFF' : colors.text }]}>
-                  {isSubscription ? '🔄 Recurring Transaction' : '🔄 Make Recurring'}
-                </Text>
-              </TouchableOpacity>
+                style={styles.subscriptionToggle}
+              />
 
               {/* Subscription Interval Selector */}
               {isSubscription && (
                 <>
                   <Text style={[styles.label, { color: colors.textSecondary }]}>Repeat Every</Text>
                   <View style={styles.intervalButtons}>
-                    <TouchableOpacity
-                      style={[
-                        styles.intervalButton,
-                        subscriptionInterval === '2weeks' && { backgroundColor: colors.accent },
-                        { borderColor: colors.border },
-                      ]}
+                    <NeomorphicChip
+                      label="2 Weeks"
+                      selected={subscriptionInterval === '2weeks'}
                       onPress={() => setSubscriptionInterval('2weeks')}
-                    >
-                      <Text
-                        style={[
-                          styles.intervalButtonText,
-                          { color: subscriptionInterval === '2weeks' ? '#FFFFFF' : colors.text },
-                        ]}
-                      >
-                        2 Weeks
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.intervalButton,
-                        subscriptionInterval === 'month' && { backgroundColor: colors.accent },
-                        { borderColor: colors.border },
-                      ]}
+                      style={styles.intervalButton}
+                    />
+                    <NeomorphicChip
+                      label="Month"
+                      selected={subscriptionInterval === 'month'}
                       onPress={() => setSubscriptionInterval('month')}
-                    >
-                      <Text
-                        style={[
-                          styles.intervalButtonText,
-                          { color: subscriptionInterval === 'month' ? '#FFFFFF' : colors.text },
-                        ]}
-                      >
-                        Month
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.intervalButton,
-                        subscriptionInterval === 'year' && { backgroundColor: colors.accent },
-                        { borderColor: colors.border },
-                      ]}
+                      style={styles.intervalButton}
+                    />
+                    <NeomorphicChip
+                      label="Year"
+                      selected={subscriptionInterval === 'year'}
                       onPress={() => setSubscriptionInterval('year')}
-                    >
-                      <Text
-                        style={[
-                          styles.intervalButtonText,
-                          { color: subscriptionInterval === 'year' ? '#FFFFFF' : colors.text },
-                        ]}
-                      >
-                        Year
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.intervalButton,
-                        subscriptionInterval === 'custom' && { backgroundColor: colors.accent },
-                        { borderColor: colors.border },
-                      ]}
+                      style={styles.intervalButton}
+                    />
+                    <NeomorphicChip
+                      label="Custom"
+                      selected={subscriptionInterval === 'custom'}
                       onPress={() => setSubscriptionInterval('custom')}
-                    >
-                      <Text
-                        style={[
-                          styles.intervalButtonText,
-                          { color: subscriptionInterval === 'custom' ? '#FFFFFF' : colors.text },
-                        ]}
-                      >
-                        Custom
-                      </Text>
-                    </TouchableOpacity>
+                      style={styles.intervalButton}
+                    />
                   </View>
 
                   {subscriptionInterval === 'custom' && (
@@ -598,26 +508,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  fabIcon: {
-    fontSize: 32,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -644,15 +534,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   categoryChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 2,
     marginRight: 8,
-  },
-  categoryChipText: {
-    fontSize: 14,
-    fontWeight: '500',
   },
   paymentMethodButtons: {
     flexDirection: 'row',
@@ -661,15 +543,6 @@ const styles = StyleSheet.create({
   },
   paymentMethodButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-  },
-  paymentMethodText: {
-    fontSize: 16,
-    fontWeight: '500',
   },
   modalButtons: {
     flexDirection: 'row',
@@ -686,45 +559,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   calendarButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  calendarButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+    marginRight: 8,
   },
   dateInputContainer: {
     flex: 1,
   },
   repeatButton: {
     marginTop: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  repeatButtonText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
   },
   deleteButton: {
     marginTop: 16,
   },
   subscriptionToggle: {
     marginTop: 16,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-  },
-  subscriptionToggleText: {
-    fontSize: 15,
-    fontWeight: '600',
+    width: '100%',
   },
   intervalButtons: {
     flexDirection: 'row',
@@ -733,13 +581,5 @@ const styles = StyleSheet.create({
   },
   intervalButton: {
     flex: 1,
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 2,
-    alignItems: 'center',
-  },
-  intervalButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
   },
 });

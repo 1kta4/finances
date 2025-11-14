@@ -5,13 +5,12 @@ import {
   StyleSheet,
   ScrollView,
   SafeAreaView,
-  TouchableOpacity,
   Dimensions,
 } from 'react-native';
 import { LineChart, PieChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { useData } from '../../context/DataContext';
-import { NeomorphicCard } from '../../components/neomorphic';
+import { NeomorphicCard, NeomorphicChip } from '../../components/neomorphic';
 import { TimeRange, Transaction } from '../../types';
 import { formatCurrency, getMonthYearString, getDateRangeFromTimeRange, formatDate } from '../../utils/helpers';
 import { TIME_RANGE_OPTIONS } from '../../utils/constants';
@@ -192,27 +191,13 @@ export const DashboardScreen: React.FC = () => {
         {/* Time Range Selector */}
         <View style={styles.timeRangeContainer}>
           {TIME_RANGE_OPTIONS.map((option) => (
-            <TouchableOpacity
+            <NeomorphicChip
               key={option.value}
-              style={[
-                styles.timeRangeButton,
-                {
-                  backgroundColor: timeRange === option.value ? colors.accent : colors.surface,
-                },
-              ]}
+              label={option.label}
+              selected={timeRange === option.value}
               onPress={() => setTimeRange(option.value as TimeRange)}
-            >
-              <Text
-                style={[
-                  styles.timeRangeText,
-                  {
-                    color: timeRange === option.value ? '#FFFFFF' : colors.text,
-                  },
-                ]}
-              >
-                {option.label}
-              </Text>
-            </TouchableOpacity>
+              style={styles.timeRangeChip}
+            />
           ))}
         </View>
 
@@ -435,18 +420,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
+    gap: 8,
   },
-  timeRangeButton: {
+  timeRangeChip: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    marginHorizontal: 4,
-    alignItems: 'center',
-  },
-  timeRangeText: {
-    fontSize: 12,
-    fontWeight: '600',
   },
   balanceCard: {
     marginBottom: 20,
