@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, View } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, View, Animated, Easing } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 
 interface NeomorphicChipProps {
@@ -19,11 +19,58 @@ export const NeomorphicChip: React.FC<NeomorphicChipProps> = ({
 }) => {
   const { colors, themeMode } = useTheme();
   const [pressed, setPressed] = useState(false);
+  
+  // Animation values
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const backgroundColorAnim = useRef(new Animated.Value(selected ? 1 : 0)).current;
 
   const isActive = selected || pressed;
 
+  // Animate on selection change
+  useEffect(() => {
+    // Background color transition
+    Animated.timing(backgroundColorAnim, {
+      toValue: selected ? 1 : 0,
+      duration: 400,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: false,
+    }).start();
+
+    // Bounce animation when selected
+    if (selected) {
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.05,
+          duration: 200,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 3,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      scaleAnim.setValue(1);
+    }
+  }, [selected]);
+
+  // Interpolate background color
+  const animatedBackgroundColor = backgroundColorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.background, colors.accent],
+  });
+
+  // Interpolate text color
+  const animatedTextColor = backgroundColorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.text, '#FFFFFF'],
+  });
+
   return (
-    <View
+    <Animated.View
       style={[
         styles.outerShadow,
         {
@@ -32,6 +79,7 @@ export const NeomorphicChip: React.FC<NeomorphicChipProps> = ({
           shadowOffset: isActive ? { width: -2, height: -2 } : { width: 3, height: 3 },
           shadowOpacity: themeMode === 'dark' ? 0.6 : 0.15,
           shadowRadius: 6,
+          transform: [{ scale: scaleAnim }],
         },
         style,
       ]}
@@ -49,29 +97,33 @@ export const NeomorphicChip: React.FC<NeomorphicChipProps> = ({
         ]}
       >
         <TouchableOpacity
-          style={[
-            styles.chip,
-            {
-              backgroundColor: selected ? colors.accent : colors.background,
-            },
-          ]}
+          style={styles.touchable}
           onPress={onPress}
           onPressIn={() => setPressed(true)}
           onPressOut={() => setPressed(false)}
           activeOpacity={1}
         >
-          <Text
+          <Animated.View
             style={[
-              styles.text,
-              { color: selected ? '#FFFFFF' : colors.text },
-              textStyle,
+              styles.chip,
+              {
+                backgroundColor: animatedBackgroundColor,
+              },
             ]}
           >
-            {label}
-          </Text>
+            <Animated.Text
+              style={[
+                styles.text,
+                { color: animatedTextColor },
+                textStyle,
+              ]}
+            >
+              {label}
+            </Animated.Text>
+          </Animated.View>
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -83,6 +135,10 @@ const styles = StyleSheet.create({
   innerShadow: {
     borderRadius: 12,
     flex: 1,
+  },
+  touchable: {
+    flex: 1,
+    borderRadius: 12,
   },
   chip: {
     paddingVertical: 10,

@@ -16,7 +16,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useData } from '../../context/DataContext';
 import { NeomorphicCard, NeomorphicButton, NeomorphicInput, NeomorphicFAB, NeomorphicChip } from '../../components/neomorphic';
 import { formatCurrency, formatDateTime } from '../../utils/helpers';
-import { Transaction, Category, SubscriptionInterval } from '../../types';
+import { Transaction, SubscriptionInterval } from '../../types';
 
 export const EarningScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -95,7 +95,7 @@ export const EarningScreen: React.FC = () => {
     setModalVisible(true);
   };
 
-  const handleDateChange = (event: any, date?: Date) => {
+  const handleDateChange = (_event: any, date?: Date) => {
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
     }

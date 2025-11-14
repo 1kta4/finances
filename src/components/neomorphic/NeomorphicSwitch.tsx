@@ -18,13 +18,31 @@ export const NeomorphicSwitch: React.FC<NeomorphicSwitchProps> = ({
   const { colors, themeMode } = useTheme();
   const [pressed, setPressed] = useState(false);
   const [animatedValue] = useState(new Animated.Value(value ? 1 : 0));
+  const [scaleValue] = useState(new Animated.Value(1));
 
   useEffect(() => {
-    Animated.timing(animatedValue, {
+    // Animate thumb position with spring
+    Animated.spring(animatedValue, {
       toValue: value ? 1 : 0,
-      duration: 200,
-      useNativeDriver: false,
+      friction: 7,
+      tension: 80,
+      useNativeDriver: false, // Must be false for color interpolation
     }).start();
+
+    // Bounce animation for thumb scale
+    Animated.sequence([
+      Animated.timing(scaleValue, {
+        toValue: 1.15,
+        duration: 150,
+        useNativeDriver: false, // Must match animatedValue's useNativeDriver
+      }),
+      Animated.spring(scaleValue, {
+        toValue: 1,
+        friction: 4,
+        tension: 40,
+        useNativeDriver: false, // Must match animatedValue's useNativeDriver
+      }),
+    ]).start();
   }, [value]);
 
   const handlePress = () => {
@@ -109,7 +127,10 @@ export const NeomorphicSwitch: React.FC<NeomorphicSwitchProps> = ({
                   shadowOffset: { width: 1, height: 1 },
                   shadowOpacity: themeMode === 'dark' ? 0.6 : 0.2,
                   shadowRadius: 3,
-                  transform: [{ translateX: thumbPosition }],
+                  transform: [
+                    { translateX: thumbPosition },
+                    { scale: scaleValue },
+                  ],
                 },
               ]}
             />
